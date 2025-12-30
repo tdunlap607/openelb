@@ -471,7 +471,7 @@ func (i *Manager) ReleaseIP(ctx context.Context, release *svcRecord) error {
 	//i.updateMetrics(clone)
 	if !reflect.DeepEqual(clone, eip) {
 		if err := i.Status().Update(ctx, clone); err != nil {
-			klog.Errorf(err.Error())
+			klog.Error(err)
 			return err
 		}
 	}
