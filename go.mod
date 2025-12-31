@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/coreos/go-iptables v0.4.2
-	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-chi/cors v1.2.1
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/golang/protobuf v1.5.4
