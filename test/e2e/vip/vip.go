@@ -15,6 +15,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 )
 
@@ -36,19 +37,24 @@ var _ = framework.KubesphereDescribe("[OpenELB:VIP]", func() {
 		ns = f.Namespace.Name
 
 		ginkgo.By("Starting vip mode")
-		ds, err := c.AppsV1().DaemonSets(OpenELBNamespace).Get(context.TODO(), OpenELBSpeaker, metav1.GetOptions{})
-		framework.ExpectNoError(err)
-		framework.ExpectNotNil(ds)
-		framework.ExpectEqual(len(ds.Spec.Template.Spec.Containers), 1)
-
-		container := ds.Spec.Template.Spec.Containers[0]
-		for i, arg := range container.Args {
-			if strings.Contains(arg, "enable-keepalived-vip") {
-				container.Args[i] = "--enable-keepalived-vip=true"
+		err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			ds, err := c.AppsV1().DaemonSets(OpenELBNamespace).Get(context.TODO(), OpenELBSpeaker, metav1.GetOptions{})
+			if err != nil {
+				return err
 			}
-		}
+			framework.ExpectNotNil(ds)
+			framework.ExpectEqual(len(ds.Spec.Template.Spec.Containers), 1)
 
-		_, err = c.AppsV1().DaemonSets(OpenELBNamespace).Update(context.TODO(), ds, metav1.UpdateOptions{})
+			container := &ds.Spec.Template.Spec.Containers[0]
+			for i, arg := range container.Args {
+				if strings.Contains(arg, "enable-keepalived-vip") {
+					container.Args[i] = "--enable-keepalived-vip=true"
+				}
+			}
+
+			_, err = c.AppsV1().DaemonSets(OpenELBNamespace).Update(context.TODO(), ds, metav1.UpdateOptions{})
+			return err
+		})
 		framework.ExpectNoError(err)
 	})
 
